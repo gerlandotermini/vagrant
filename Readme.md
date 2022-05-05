@@ -15,13 +15,13 @@ GT Vagrant is an open source [Vagrant](https://www.vagrantup.com) configuration 
 
 ## Software included
 
-GT Vagrant is built on a Ubuntu 16.04 LTS (Xenial) base VM and provisions the server with a _conservative_ list of several software packages, including:
+GT Vagrant is built on Ubuntu LTS and provisions the server with a _conservative_ list of several software packages, including:
 
 * [Apache](http://apache.org/) 2.4.x
-* [MySQL](https://www.mysql.com/) 5.7.x
-* [PHP](https://php.org/) 7.4 (Apache module)
+* [MySQL](https://www.mysql.com/)
+* [PHP](https://php.org/) 7.4 and 8.0 (Apache module, switch script included)
 * [WordPress](https://wordpress.org/)
-* [Git](https://git-scm.com/) 2.7.x
+* [Git](https://git-scm.com/)
 * [WP-CLI](http://wp-cli.org/)
 * [Composer](https://github.com/composer/composer)
 * [NodeJs](https://nodejs.org/)
