@@ -1,0 +1,191 @@
+#!/bin/bash
+
+WP_STABLE_BRANCH="5.3.2"
+WP_SETUP_DIR="$(dirname "$0")"
+VM_IP_ADDRESS="$(hostname -I | cut -f2 -d' ')"
+
+if [[ $1 == "" ]]; then
+	echo "Usage: $0 site_url.local [dash|wp|empty]"
+	exit 1
+fi
+
+WP_SETUP_URL=$1
+
+# MySQL doesn't like dots in database names
+WP_SETUP_URL_DB=sites_${WP_SETUP_URL/./_}
+
+if [ "$2" == "delete" ]; then
+	printf "Deleting $WP_SETUP_URL. Are you sure [y/N]? "
+	read -r WP_CONFIRM_DELETE
+	if [[ $WP_CONFIRM_DELETE != 'y' && $WP_CONFIRM_DELETE != 'Y' ]]; then
+		exit 0
+	fi
+
+	# Document root
+	if [ -d "/var/www/$WP_SETUP_URL/" ]; then
+		echo "Deleting document root"
+		sudo rm -rf "/var/www/$WP_SETUP_URL/"
+	else
+		echo "Document root not found"
+	fi
+
+	# Virtual host definition
+	if [ -f "/etc/apache2/sites-available/$WP_SETUP_URL.conf" ]; then
+		echo "Deleting Apache virtual host"
+		sudo rm "/etc/apache2/sites-available/$WP_SETUP_URL.conf"
+	fi
+
+	# Symlink in the home directory
+	if [ -L "$HOME/$WP_SETUP_URL" ]; then
+		sudo rm "$HOME/$WP_SETUP_URL"
+	fi
+
+	# Database
+	echo "Dropping database, if it exists"
+	export MYSQL_PWD=vagrant
+	mysql -uroot -e "DROP DATABASE IF EXISTS $WP_SETUP_URL_DB"
+	export MYSQL_PWD=
+
+	# Backup cron job
+	crontab -l | grep -v "/usr/local/bin/wp-backup $WP_SETUP_URL"  | crontab -
+
+	# Restart Apache
+	sudo apachectl restart
+
+	exit 0
+fi
+
+# Abort if the folder exists and is not empty
+if [[ -d /var/www/$WP_SETUP_URL/ &&  "$(ls -A /var/www/$WP_SETUP_URL/)" ]]; then
+	echo "Nothing to do. Document root /var/www/$WP_SETUP_URL/ is not empty."
+	exit 0
+fi
+
+echo -e "Setting up new site: $WP_SETUP_URL"
+
+# Create document root folder
+if [ ! -d "/var/www/$WP_SETUP_URL/" ]; then
+	mkdir "/var/www/$WP_SETUP_URL/"
+
+	# Document Root
+	mkdir "/var/www/$WP_SETUP_URL/html"
+
+	# Apache log files will be stored in here
+	mkdir "/var/www/$WP_SETUP_URL/logs"
+
+	# Daily backups will be stored in here
+	mkdir "/var/www/$WP_SETUP_URL/backups"
+
+	# Create a symlink from the home directory
+	ln -s "/var/www/$WP_SETUP_URL/html/" "$HOME/$WP_SETUP_URL"
+fi
+
+# Create the database and user
+export MYSQL_PWD=vagrant
+mysql -uroot -e "CREATE USER IF NOT EXISTS '$WP_SETUP_URL_DB'@'localhost' IDENTIFIED BY 'wordpress'"
+mysql -uroot -e "CREATE DATABASE IF NOT EXISTS $WP_SETUP_URL_DB"
+mysql -uroot -e "GRANT ALL ON $WP_SETUP_URL_DB.* TO '$WP_SETUP_URL_DB'@'localhost'"
+mysql -uroot -e "FLUSH PRIVILEGES"
+export MYSQL_PWD=
+
+# Just setup domain names, document root and database
+if [ "$2" == "empty" ]; then
+	echo -e "Setting up an empty document root for your project"
+
+# Is this a standard installation of WordPress?
+elif [ "$2" == "wp" ]; then
+	echo -e "Cloning the WordPress repository. This will take a while..."
+
+	git clone https://github.com/WordPress/WordPress.git /var/www/$WP_SETUP_URL/html/ 2> /dev/null
+
+	# Switch to a stable branch
+	cd "/var/www/$WP_SETUP_URL/html/"
+	git checkout tags/$WP_STABLE_BRANCH -b $WP_STABLE_BRANCH 2> /dev/null
+
+	# Add a .gitignore file to avoid tracking plugins, themes, etc
+	cp /provision/config/wp_gitignore .gitignore
+
+	# Copy the config file and update the database credentials
+	cp /var/www/$WP_SETUP_URL/html/wp-config-sample.php /var/www/$WP_SETUP_URL/html/wp-config.php 2> /dev/null
+	sudo sed -i "s/database_name_here/$WP_SETUP_URL_DB/" /var/www/$WP_SETUP_URL/html/wp-config.php 2> /dev/null
+	sudo sed -i "s/username_here/$WP_SETUP_URL_DB/" /var/www/$WP_SETUP_URL/html/wp-config.php 2> /dev/null
+	sudo sed -i "s/password_here/wordpress/" /var/www/$WP_SETUP_URL/html/wp-config.php 2> /dev/null
+
+	# Random salt
+	RANDOM_WP_SALT=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+	sudo sed -i "s/put your unique phrase here/$RANDOM_WP_SALT/g" /var/www/$WP_SETUP_URL/html/wp-config.php 2> /dev/null
+
+	echo "Initializing the WordPress database"
+	/usr/local/bin/wp core install --url=https://$WP_SETUP_URL/ --title=$WP_SETUP_URL --admin_user=admin --admin_email=vagrant@$WP_SETUP_URL --admin_password=vagrant
+
+	# Install backup cron job if it doesn't exists
+	if [ "$(crontab -l | grep -i '/usr/local/bin/wp-backup $WP_SETUP_URL')" ]; then
+		echo 'Cron job already installed. Skipping...'
+	else
+		echo 'Installing backup cron job'
+		(crontab -l; echo "$((1 + RANDOM % 59))  11   *   *   *   /usr/local/bin/wp-backup $WP_SETUP_URL") | crontab - 2> /dev/null
+	fi
+
+# Install DaSh 
+else
+	# Clone the main repository, which contains all the configuration files
+	echo -e "Cloning main repository..."
+
+	git clone https://gitlab.com/gccomms/wordpress.git /var/www/$WP_SETUP_URL/html/ 2> /dev/null
+
+	cd "/var/www/$WP_SETUP_URL/html/"
+
+	# Init the submodules and switch to the master branch
+	echo "Init the submodules and switch to the master branch. This might take a while..."
+	git submodule update --init --recursive
+	git submodule foreach git checkout master 2> /dev/null
+
+	# For WordPress itself, the master branch points to the bleeding-edge: we switch to a more stable release
+	echo "Switching WordPress to a known stable branch"
+	cd "/var/www/$WP_SETUP_URL/html/wp/"
+	git checkout -f -b $WP_STABLE_BRANCH tags/$WP_STABLE_BRANCH 2> /dev/null
+
+	# Copy the config file and update the database credentials
+	cp /var/www/$WP_SETUP_URL/html/config-sample.php /var/www/$WP_SETUP_URL/html/config.php 2> /dev/null
+	sudo sed -i "s/VH_DB_NAME/$WP_SETUP_URL_DB/" /var/www/$WP_SETUP_URL/html/config.php 2> /dev/null
+	sudo sed -i "s/VH_DB_USER/$WP_SETUP_URL_DB/" /var/www/$WP_SETUP_URL/html/config.php 2> /dev/null
+
+	echo "Initializing the WordPress database"
+	/usr/local/bin/wp core install --url=https://$WP_SETUP_URL/ --title=$WP_SETUP_URL --admin_user=admin --admin_email=vagrant@mail.local --admin_password=vagrant
+
+	# Fix the site_url
+	export MYSQL_PWD=vagrant
+	mysql -uroot -D $WP_SETUP_URL_DB -e "UPDATE wp_options SET option_value='https://$WP_SETUP_URL/wp' WHERE option_name = 'siteurl'"
+	export MYSQL_PWD=
+
+	# Install TwentyTwenty
+	/usr/local/bin/wp theme install twentytwenty
+	/usr/local/bin/wp theme activate twentytwenty
+
+	# Install backup cron job if it doesn't exists
+	if [ "$(crontab -l | grep -i '/usr/local/bin/wp-backup $WP_SETUP_URL')" ]; then
+		echo 'Cron job already installed. Skipping...'
+	else
+		echo 'Installing backup cron job'
+		(crontab -l; echo "$((1 + RANDOM % 59))  11   *   *   *   /usr/local/bin/wp-backup $WP_SETUP_URL") | crontab - 2> /dev/null
+	fi
+fi
+
+# Add virtual host
+echo "Setting up virtual host"
+if [[ -f /provision/config/vhost && -d /etc/apache2/sites-available/ ]]; then
+	sudo cp /provision/config/vhost /etc/apache2/sites-available/$WP_SETUP_URL.conf 2> /dev/null
+	sudo sed -i "s/VH_SITEURL/$WP_SETUP_URL/" /etc/apache2/sites-available/$WP_SETUP_URL.conf 2> /dev/null
+	sudo ln -s /etc/apache2/sites-available/$WP_SETUP_URL.conf /etc/apache2/sites-enabled/$WP_SETUP_URL.conf 2> /dev/null
+fi
+
+# Restart Apache to load the new config
+echo "Restarting Apache"
+sudo apachectl -k graceful
+
+echo -e "\n\n\033[1;38;5;2mYour web environment is now available at https://$WP_SETUP_URL/."
+if [ "$2" != "empty" ]; then
+	echo -e "Admin: https://$WP_SETUP_URL/wp/wp-login.php - Username: admin, Password: vagrant\033[0m"
+	echo "Please make sure to add $WP_SETUP_URL to your host machine's /etc/hosts file to be able to connect to this new domain:"
+	echo -e "\n$VM_IP_ADDRESS $WP_SETUP_URL\n\n"
+fi

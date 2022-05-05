@@ -1,0 +1,12 @@
+# This is the default config file that GV uses to set itself up
+# Please make sure to indent variables with spaces, not tabs
+
+vm:
+  name: gtvagrant
+  hostname: gtvagrant.local
+  ip_address: 192.168.100.100
+
+hostnames:
+  web: wp.local
+  db: db.local
+  mail: mail.local

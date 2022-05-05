@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Make sure the username was specified as a parameter
+if [ -z "$1" ]; then
+	echo "Error: Please provide the site to backup as a parameter: backup.sh something.local"
+	exit 1
+fi
+
+# Does the folder exist?
+if [ ! -d /var/www/$1/html/ ]; then
+	echo "Error: Folder /var/www/$1/html/ does not exist. Aborting."
+	exit 1
+fi
+
+# This script is called via cron (crontab -e). Please refer to the cron schedule for more information.
+PATH=/bin:/usr/local/bin:/usr/bin:/usr/local/mysql/bin:; export PATH;
+
+# Find the WP root
+WP_INSTALL_TYPE=dash
+if [ -f /var/www/$1/html/wp-config.php ]; then
+	WP_INSTALL_TYPE=standard
+	cd /var/www/$1/html/
+elif [ -f /var/www/$1/html/wp/wp-config.php ]; then
+	cd /var/www/$1/html/wp/
+else
+	echo "WordPress document root not found. Aborting."
+	exit 1
+fi
+
+# Make sure the target backup folder exists
+if [ ! -d /var/www/$1/backups/ ]; then
+	sudo mkdir /var/www/$1/backups/
+fi
+
+# Backup and compress the database
+wp db export "/var/www/$1/backups/`date +%Y%m%d`.sql" --add-drop-table
+if [ $? -eq 0 ]; then
+	gzip "/var/www/$1/backups/`date +%Y%m%d`.sql"
+	echo 'Compressed SQL export'
+else
+	echo 'SQL export was not created'
+fi
+
+# Backup the entire www folder. Please note: in our environment, wp-content is outside the WP root
+if [ $WP_INSTALL_TYPE == "dash" ]; then
+	cd ..
+fi
+
+cd ..
+
+tar -zcf "/var/www/$1/backups/`date +%Y%m%d`.tar.gz" html
+if [ $? -eq 0 ]; then
+	echo 'Document root saved'
+else
+	echo 'Error: document root folder was not saved'
+fi
+
+# Delete files older than two months
+find "/var/www/$1/backups" -mtime +59 -type f -delete

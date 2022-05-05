@@ -1,0 +1,17 @@
+.gitignore
+*.log
+wp-config.php
+wp-content/advanced-cache.php
+wp-content/backup-db/
+wp-content/backups/
+wp-content/blogs.dir/
+wp-content/cache/
+wp-content/upgrade/
+wp-content/uploads/
+wp-content/mu-plugins/
+wp-content/plugins/
+wp-content/themes/
+
+/.htaccess
+/sitemap.xml
+/sitemap.xml.gz

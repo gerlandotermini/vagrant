@@ -1,0 +1,39 @@
+<VirtualHost *:80>
+	ServerName VH_SITEURL
+	ServerAlias *.VH_SITEURL
+
+	ServerAdmin webmaster@localhost
+	DocumentRoot /var/www/VH_SITEURL/html
+
+	ErrorLog /var/www/VH_SITEURL/logs/error.log
+	CustomLog /var/www/VH_SITEURL/logs/access.log combined
+
+	<Directory /var/www/VH_SITEURL/html/>
+		Options -Indexes +FollowSymLinks +MultiViews
+		AllowOverride All
+		Order Allow,Deny
+		Allow from All
+	</Directory>
+</VirtualHost>
+
+<VirtualHost *:443>
+	ServerName VH_SITEURL
+	ServerAlias *.VH_SITEURL
+
+	ServerAdmin webmaster@localhost
+	DocumentRoot /var/www/VH_SITEURL/html
+
+	ErrorLog /var/www/VH_SITEURL/logs/ssl-error.log
+	CustomLog /var/www/VH_SITEURL/logs/ssl-access.log combined
+
+	SSLEngine on
+	SSLCertificateFile /etc/ssl/certs/ssl-cert-snakeoil.pem
+	SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+
+	<Directory /var/www/VH_SITEURL/html/>
+		Options -Indexes +FollowSymLinks +MultiViews
+		AllowOverride All
+		Order Allow,Deny
+		Allow from All
+	</Directory>
+</VirtualHost>

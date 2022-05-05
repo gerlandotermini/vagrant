@@ -1,0 +1,8 @@
+[Unit]
+Description=MailHog service
+
+[Service]
+ExecStart=/usr/local/bin/mailhog -api-bind-addr GUEST_IP_ADDRESS:8025 -ui-bind-addr GUEST_IP_ADDRESS:8025 -smtp-bind-addr 127.0.0.1:1025
+
+[Install]
+WantedBy=multi-user.target
