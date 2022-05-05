@@ -32,7 +32,7 @@ GT Vagrant is built on a Ubuntu 16.04 LTS (Xenial) base VM and provisions the se
 
 ## Getting Started
 
-Graduate Vagrant requires recent versions of both Vagrant and VirtualBox.
+GT Vagrant requires recent versions of both Vagrant and VirtualBox.
 
 [Vagrant](https://www.vagrantup.com) is a "tool for building and distributing development environments". It works with [virtualization](https://en.wikipedia.org/wiki/X86_virtualization) software such as [VirtualBox](https://www.virtualbox.org/) to provide a virtual machine sandboxed from your local environment. Please note that no provider support is available for Parallels, Hyper-V, VMWare Fusion, and VMWare Workstation.
 
@@ -48,7 +48,7 @@ If you aren’t using a Mac, you may need to turn on virtualization in your comp
 	1. The [Vagrant Hosts Updater](https://github.com/cogitatio/vagrant-hostsupdater) plugin will be installed by the provisioning script.
 1. Reboot your machine. If you don’t reboot your machine after installing/updating Vagrant and VirtualBox, there can be networking issues. A full power cycle will ensure all components are fully installed and loaded.
 
-## Installing Graduate Vagrant
+## Installing GT Vagrant
 
 We recommend using Git as it makes updating much easier. Open a Terminal window and clone the main repo into a local directory:
 
@@ -62,7 +62,7 @@ Once the repo has been cloned (or the zip file has been unzipped), in Terminal e
 
 When the installation is complete, make sure no errors were reported by any of the scripts. If everything went well, you can access your newly minted virtual enviroment with `vagrant ssh`. You can also visit the default WordPress site at `https://wp.local` (username: admin, password: vagrant), PhpMyAdmin at `https://db.local` (username: root, password: vagrant), and MailHog at `http://mail.local:8025` (no password required).
 
-**Please note**: Graduate Vagrant uses self-signed SSL certificates, which will trigger a warning on your browser about the connection not being secure. This is expected, and can be fixed by configuring your browser to accept this exception and not display a warning anymore. There are [many resources on the web](https://stackoverflow.com/questions/7580508/getting-chrome-to-accept-self-signed-localhost-certificate) that explain how to do that. Feel free to research the solution that applies to your specific browser.
+**Please note**: GT Vagrant uses self-signed SSL certificates, which will trigger a warning on your browser about the connection not being secure. This is expected, and can be fixed by configuring your browser to accept this exception and not display a warning anymore. There are [many resources on the web](https://stackoverflow.com/questions/7580508/getting-chrome-to-accept-self-signed-localhost-certificate) that explain how to do that. Feel free to research the solution that applies to your specific browser.
 
 ## Basic Usage
 
@@ -95,7 +95,7 @@ The default WordPress site is installed under `/var/www/wp.local` (or the custom
 	* `wp` contains WordPress as a Git submodule. Please [refer to this article](https://deliciousbrains.com/install-wordpress-subdirectory-composer-git-submodule/) for more information on why we decided to follow this approach. In short, by treating WordPress itself as a dependency, you can make the structure of your Git repo more modular and clean. You don’t have to replicate the code and updates become much easier as you don’t have to commit updates to WordPress as part of your workflow.
 	* `wp-config.php` has been modified to make WordPress aware of our custom folder structure, and it does NOT contain database credentials or other custom settings.
 
-Our basic configuration is very lean and simple, and it only includes WordPress and GradPress as a submodule, to give you an idea of how to add dependencies, as described in [this article on Delicious Brains](https://deliciousbrains.com/git-submodules-manage-wordpress-themes-and-plugins/). This will make it easier to deploy a standard enviroment that already includes all the themes and plugins your developers will need to build many new awesome WordPress-based websites, without having to go through the tedious task of installing those dependencies individually. More information on how to create your custom collection can be found on our [WSE Gitlab Page](https://gitlab.com/gccomms/wordpress#adding-dependencies).
+Our basic configuration is very lean and simple, and it only includes WordPress as a submodule, to give you an idea of how to add dependencies, as described in [this article on Delicious Brains](https://deliciousbrains.com/git-submodules-manage-wordpress-themes-and-plugins/). This will make it easier to deploy a standard enviroment that already includes all the themes and plugins your developers will need to build many new awesome WordPress-based websites, without having to go through the tedious task of installing those dependencies individually. More information on how to create your custom collection can be found on our [WSE Gitlab Page](https://gitlab.com/gccomms/wordpress#adding-dependencies).
 
 ## Editing files and committing changes: host or guest?
 
@@ -105,7 +105,7 @@ So, now that you have your shiny new virtual development enviroment, how should 
 
 Your GTV install will hopefully serve you for many years, but in order to keep pace with new fixes and improvements, you’ll need to update it from time to time. A simple `git pull; vagrant reload --provision` should do just fine. You may want to make sure your vagrant and virtualbox are up to date. If necessary, download a new vagrant and install a fresh copy. 
 
-Graduate Vagrant is intended as a developer environment, and you should be able to throw away the VM and rebuild it without losing anything. However, you should be able to destroy a machine without losing any of the files in the `www` folder (but you **will** lose the databases!). Having said that, do not keep critical information stored only in GV, always take backups.
+GT Vagrant is intended as a developer environment, and you should be able to throw away the VM and rebuild it without losing anything. However, you should be able to destroy a machine without losing any of the files in the `www` folder (but you **will** lose the databases!). Having said that, do not keep critical information stored only in GV, always take backups.
 
 ## Adding a New Site
 
@@ -125,7 +125,7 @@ This is what will happen when you run that command:
 
 Please remember to add `newsite.local` to your local /etc/hosts file, with IP address 192.168.100.100 (or the custom IP address specified in your config file). Once you do that, point your browser to https://newsite.local and you should see your new shiny WordPress install up and running. Also, keep in mind that when using the custom folder structure, the admin panel is available at https://newsite.local/wp/wp-login.php.
 
-Graduate Vagrant does not support custom versions of PHP for each virtual host, for the sake of simplicity; if your development workflow requires a more customizable experience, we recommend that you look into [Varying Vagrant Vagrants](https://varyingvagrantvagrants.org/).
+GT Vagrant does not support custom versions of PHP for each virtual host, for the sake of simplicity; if your development workflow requires a more customizable experience, we recommend that you look into [Varying Vagrant Vagrants](https://varyingvagrantvagrants.org/).
 
 ## Updating WordPress and plugins
 
@@ -143,4 +143,4 @@ This script will temporarily save your `.git` folder, and then use WP-CLI to upd
 
 Our team has adopted a fairly [standard development workflow](https://nvie.com/posts/a-successful-git-branching-model/). Developers work on bugs and features in separate Git branches; once these updates are ready to be released, they are merged into the `dev` branch and deployed to the staging environment for quality assurance and testing; after testing is complete, the `dev` branch is merged into the master branch, ready to be deployed to the production environment. This commit is also tagged with a release number, when applicable. We consider origin/master to be the main branch where the source code of HEAD always reflects a production-ready state. We consider origin/dev to be the main branch where the source code of HEAD always reflects a state with the latest delivered development changes for the next release. Next to the main branches master and dev, our development model uses a variety of supporting branches to aid parallel development between team members, ease tracking of features, prepare for production releases and to assist in quickly fixing live production problems.
 
-The Graduate Vagrant environment has been designed with this workflow in mind, even though is flexible enough to be adapted to other styles and practices.
+The GT Vagrant environment has been designed with this workflow in mind, even though is flexible enough to be adapted to other styles and practices.
