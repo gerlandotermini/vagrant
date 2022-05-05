@@ -47,6 +47,10 @@ fi
 # Install PHP 7.4
 sudo apt-get install -y php7.4 php7.4-fpm php7.4-common php7.4-mysql php7.4-mysqli php7.4-xml libapache2-mod-php7.4 php7.4-cli php7.4-mbstring php7.4-xml php7.4-curl php7.4-zip php7.4-ldap php7.4-dom php7.4-opcache php7.4-gd
 
+# Instal PHP 8.0 and 8.1
+sudo apt-get install -y php8.1 php8.0-fpm php8.0-mysql php8.0-mysqli php8.0-xml php8.0-cli php8.0-mbstring php8.0-xml php8.0-curl php8.0-zip php8.0-ldap php8.0-dom php8.0-opcache php8.0-gd
+sudo apt-get install -y php8.1 php8.1-fpm php8.1-mysql php8.1-mysqli php8.1-xml php8.1-cli php8.1-mbstring php8.1-xml php8.1-curl php8.1-zip php8.1-ldap php8.1-dom php8.1-opcache php8.1-gd
+
 # Set PHP 7.4 as the default version for CLI and others
 sudo update-alternatives --set php /usr/bin/php7.4
 
