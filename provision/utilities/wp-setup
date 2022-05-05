@@ -1,6 +1,6 @@
 #!/bin/bash
 
-WP_STABLE_BRANCH="5.3.2"
+WP_STABLE_BRANCH="5.9"
 WP_SETUP_DIR="$(dirname "$0")"
 VM_IP_ADDRESS="$(hostname -I | cut -f2 -d' ')"
 
@@ -131,7 +131,7 @@ else
 	# Clone the main repository, which contains all the configuration files
 	echo -e "Cloning main repository..."
 
-	git clone https://gitlab.com/gccomms/wordpress.git /var/www/$WP_SETUP_URL/html/ 2> /dev/null
+	git clone https://github.com/gerlandotermini/dash.git /var/www/$WP_SETUP_URL/html/ 2> /dev/null
 
 	cd "/var/www/$WP_SETUP_URL/html/"
 
